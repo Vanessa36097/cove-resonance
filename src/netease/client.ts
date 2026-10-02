@@ -156,21 +156,20 @@ export class NeteaseClient {
     }
     return body;
   }
-
   async getAccountProfile(): Promise<AccountProfile> {
     const body = await this.call("user_account");
     const account = asRecord(body.account);
     const profile = asRecord(body.profile);
-    const id = readString(account.id) ?? readString(profile.userId) ?? (account.id != null ? String(account.id) : null) ?? (profile.userId != null ? String(profile.userId) : null);
+    const rawId = account.id ?? profile.userId;
+    const id = rawId != null ? String(rawId) : null;
     if (!id) throw new NeteaseApiError("user_account", 200, "Account id missing");
     return {
       id,
-      nickname: readString(profile.nickname),
-      avatarUrl: readString(profile.avatarUrl),
+      nickname: readString(profile.nickname) ?? (profile.nickname != null ? String(profile.nickname) : null),
+      avatarUrl: readString(profile.avatarUrl) ?? (profile.avatarUrl != null ? String(profile.avatarUrl) : null),
       gender: readNumber(profile.gender),
     };
   }
-
   async getAccountId(): Promise<string> {
     return (await this.getAccountProfile()).id;
   }
