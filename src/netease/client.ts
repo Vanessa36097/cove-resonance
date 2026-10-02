@@ -171,6 +171,7 @@ export class NeteaseClient {
     };
   }
   async getAccountId(): Promise<string> {
+    if (process.env.NETEASE_ACCOUNT_ID) return process.env.NETEASE_ACCOUNT_ID;
     return (await this.getAccountProfile()).id;
   }
 
