@@ -161,7 +161,7 @@ export class NeteaseClient {
     const body = await this.call("user_account");
     const account = asRecord(body.account);
     const profile = asRecord(body.profile);
-    const id = readString(account.id) ?? readString(profile.userId);
+    const id = readString(account.id) ?? readString(profile.userId) ?? (account.id != null ? String(account.id) : null) ?? (profile.userId != null ? String(profile.userId) : null);
     if (!id) throw new NeteaseApiError("user_account", 200, "Account id missing");
     return {
       id,
