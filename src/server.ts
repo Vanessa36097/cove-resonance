@@ -171,7 +171,7 @@ async function loginIfNeeded(): Promise<void> {
     const { createRequire } = await import("node:module");
     const require = createRequire(import.meta.url);
     const sdk = require("NeteaseCloudMusicApi") as Record<string, (params: Record<string, unknown>) => Promise<{ body?: unknown; status?: number }>>;
-    const response = await sdk.login_cellphone({ phone, password, countrycode: "86" });
+    const response = await sdk.login_cellphone({ phone, password, countrycode: "86", realIP: "116.25.146.177" });
     const body = response?.body as Record<string, unknown> | undefined;
     const code = typeof body?.code === "number" ? body.code : null;
     if (code !== 200) {
