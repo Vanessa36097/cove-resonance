@@ -162,17 +162,47 @@ export function createHttpServer() {
   });
 }
 
-if (process.env.NODE_ENV !== "test") {
-  createHttpServer().listen(PORT, "0.0.0.0", () => {
-    console.log("Cove Resonance listening on http://0.0.0.0:" + PORT + " (MCP: /mcp, /mcp/music)");
-    togetherWorker.start();
-  });
+async function loginIfNeeded(): Promise<void> {
+  const phone = process.env.NETEASE_PHONE?.trim();
+  const password = process.env.NETEASE_PASSWORD?.trim();
+  if (!phone || !password) return;
 
-  if (UNIX_SOCKET) {
-    if (existsSync(UNIX_SOCKET)) unlinkSync(UNIX_SOCKET);
-    createHttpServer().listen(UNIX_SOCKET, () => {
-      chmodSync(UNIX_SOCKET, 0o666);
-      console.log("Cove Resonance listening on unix://" + UNIX_SOCKET + " (MCP: /mcp, /mcp/music)");
-    });
+  try {
+    const { createRequire } = await import("node:module");
+    const require = createRequire(import.meta.url);
+    const sdk = require("NeteaseCloudMusicApi") as Record<string, (params: Record<string, unknown>) => Promise<{ body?: unknown; status?: number }>>;
+    const response = await sdk.login_cellphone({ phone, password, countrycode: "86" });
+    const body = response?.body as Record<string, unknown> | undefined;
+    const code = typeof body?.code === "number" ? body.code : null;
+    if (code !== 200) {
+      console.error("NetEase phone login failed, code:", code);
+      return;
+    }
+    const rawCookie = typeof body?.cookie === "string" ? body.cookie : "";
+    if (rawCookie) {
+      process.env.NETEASE_COOKIE = rawCookie;
+      console.log("NetEase phone login succeeded, cookie refreshed.");
+    } else {
+      console.warn("NetEase phone login returned no cookie.");
+    }
+  } catch (error) {
+    console.error("NetEase phone login error:", error);
   }
+}
+
+if (process.env.NODE_ENV !== "test") {
+  loginIfNeeded().then(() => {
+    createHttpServer().listen(PORT, "0.0.0.0", () => {
+      console.log("Cove Resonance listening on http://0.0.0.0:" + PORT + " (MCP: /mcp, /mcp/music)");
+      togetherWorker.start();
+    });
+
+    if (UNIX_SOCKET) {
+      if (existsSync(UNIX_SOCKET)) unlinkSync(UNIX_SOCKET);
+      createHttpServer().listen(UNIX_SOCKET, () => {
+        chmodSync(UNIX_SOCKET, 0o666);
+        console.log("Cove Resonance listening on unix://" + UNIX_SOCKET + " (MCP: /mcp, /mcp/music)");
+      });
+    }
+  });
 }
