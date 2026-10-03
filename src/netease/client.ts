@@ -156,7 +156,7 @@ export class NeteaseClient {
     }
     return body;
   }
-  //force rebuild
+  // force rebuild
   async getAccountProfile(): Promise<AccountProfile> {
     const body = await this.call("user_account");
     const account = asRecord(body.account);
