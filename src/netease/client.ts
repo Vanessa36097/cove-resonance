@@ -158,18 +158,29 @@ export class NeteaseClient {
   }
   // force rebuild
   async getAccountProfile(): Promise<AccountProfile> {
-    const body = await this.call("user_account");
-    const account = asRecord(body.account);
-    const profile = asRecord(body.profile);
-    const rawId = account.id ?? profile.userId;
-    const id = rawId != null ? String(rawId) : null;
-    if (!id) throw new NeteaseApiError("user_account", 200, "Account id missing");
-    return {
-      id,
-      nickname: readString(profile.nickname) ?? (profile.nickname != null ? String(profile.nickname) : null),
-      avatarUrl: readString(profile.avatarUrl) ?? (profile.avatarUrl != null ? String(profile.avatarUrl) : null),
-      gender: readNumber(profile.gender),
-    };
+    const envId = process.env.NETEASE_ACCOUNT_ID;
+    try {
+      const body = await this.call("user_account");
+      const account = asRecord(body.account);
+      const profile = asRecord(body.profile);
+
+      const rawId = account.id ?? profile.userId;
+      const id = rawId != null ? String(rawId) : envId ?? null;
+      if (!id) throw new NeteaseApiError("user_account", 200, "Account id missing");
+
+      return {
+        id,
+        nickname: readString(profile.nickname) ?? (profile.nickname != null ? String(profile.nickname) : null),
+        avatarUrl: readString(profile.avatarUrl) ?? (profile.avatarUrl != null ? String(profile.avatarUrl) : null),
+        gender: readNumber(profile.gender),
+      };
+    } catch (error) {
+      if (envId) {
+        console.log("getAccountProfile failed but using NETEASE_ACCOUNT_ID fallback:", envId);
+        return { id: envId, nickname: null, avatarUrl: null, gender: null };
+      }
+      throw error;
+    }
   }
   async getAccountId(): Promise<string> {
     if (process.env.NETEASE_ACCOUNT_ID) return process.env.NETEASE_ACCOUNT_ID;
